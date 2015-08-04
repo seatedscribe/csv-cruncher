@@ -20,6 +20,26 @@
 
 #include <string>
 
+class Tokenizer {
+public:
+    Tokenizer(std::string s);
+    virtual ~Tokenizer() {}
+    char Read();
+    char Peek();
+    bool Unread(char c);
+private:
+   std::string m_string;
+   std::string m_errorStr;
+   bool m_error;
+   bool m_haveUnreadChar;
+   char m_unreadChar;
+   int m_index;
+   void skipCrInCrLf();
+   char mapCrToLf(char c);
+};
+
+class StringBuilder;
+
 class CsvParser {
 public:
     CsvParser(std::istream &data);
@@ -39,6 +59,13 @@ private:
     void parseRawField();
     std::string parseQuotedField();
     std::string parseEscapedField();
+    /*
+    void parseSubField(StringBuilder sb);
+    bool isBadSimpleFieldChar(char c);
+    std::string parseSimpleField();
+    void setCommentDelimiter(std::string delimiter);
+    */
+//    Tokenizer reader;
 };
 
 #endif //CSVPARSER_H

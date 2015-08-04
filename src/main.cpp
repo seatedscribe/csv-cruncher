@@ -22,7 +22,7 @@
 
 int main()
 {
-    std::ifstream file("test.csv", std::ios::in);
+    std::ifstream file("/home/me/projects/res/test.csv", std::ios::in);
     if (!file)
         return 1;
 
@@ -31,3 +31,20 @@ int main()
     file.close();
     return 0;
 }
+
+//best fast method to read from file to a string:
+//std::string get_file_contents(const char *filename)
+//{
+//  std::ifstream in(filename, std::ios::in | std::ios::binary);
+//  if (in)
+//  {
+//    std::string contents;
+//    in.seekg(0, std::ios::end);
+//    contents.resize(in.tellg());
+//    in.seekg(0, std::ios::beg);
+//    in.read(&contents[0], contents.size());
+//    in.close();
+//    return(contents);
+//  }
+//  throw(errno);
+//}

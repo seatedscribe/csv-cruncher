@@ -19,6 +19,10 @@
 #include <fstream>
 #include "CsvParser.h"
 
+//using namespace std;
+
+
+//TODO: ridefinire peek() e read() copiando il comportamento da Tokenizer
 
 namespace CsvConst {
     char delimiter=',';
@@ -45,13 +49,13 @@ void CsvParser::parseCsvRecord()
     parseCsvStringList();
 
     in >> ch;
-    std::cout <<"record: " <<std::hex <<ch <<std::endl;
+    std::cout <<"record: " <<ch;
     if (ch == CsvConst::E_O_F) {
         in.unget();
         ch = '\n';
-        std::cout <<"unget: " <<std::hex << ch <<std::endl;
+        std::cout <<" unget: " << ch;
     }
-    std::cout <<"after: " << std::hex << ch <<std::endl;
+    std::cout <<" after: " << ch <<std::endl;
     if (ch != '\n') {
         std::cout << "End of record was expected but more data exists." <<std::endl;
         return;
@@ -123,12 +127,184 @@ std::string CsvParser::parseQuotedField()
 }
 
 
+/*
+
+private string parseEscapedField(ICharTokenizer reader) {
+      StringBuilder sb = new StringBuilder();
+
+      parseSubField(reader, sb);
+      char ch = reader.Read();
+      while (processDoubleQuote(reader, ch)) {
+        sb.Append('"');
+        parseSubField(reader, sb);
+        ch = reader.Read();
+      }
+      reader.Unread(ch);
+
+      return sb.ToString();
+    }
+
+    private void parseSubField(ICharTokenizer reader, StringBuilder sb) {
+      char ch = reader.Read();
+      while ((ch != '"') && (ch != CsvConstants.EOF)) {
+        sb.Append(ch);
+        ch = reader.Read();
+      }
+      reader.Unread(ch);
+    }
+
+    private bool isBadSimpleFieldChar(char c) {
+      return isSpace(c) || isFieldTerminator(c) || (c == '"');
+    }
+
+    private string parseSimpleField(ICharTokenizer reader) {
+
+      char ch = reader.Read();
+      if (isBadSimpleFieldChar(ch)) {
+        reader.Unread(ch);
+        return String.Empty;
+      }
+
+      StringBuilder sb = new StringBuilder();
+      sb.Append(ch);
+      ch = reader.Read();
+      while (!isBadSimpleFieldChar(ch)) {
+        sb.Append(ch);
+        ch = reader.Read();
+      }
+      reader.Unread(ch);
+
+      return sb.ToString();
+    }
+
+*/
+
+
 std::string CsvParser::parseEscapedField()
 {
+/*    StringBuilder sb = new StringBuilder();
 
+    parseSubField(sb);
+    in >> ch;
+    while (processDoubleQuote(ch)) {
+        sb.Append('"');
+        parseSubField(sb);
+        in >> ch;
+    }
+    in.unget();
+
+    return sb.ToString();
+    */
 }
+
+/*
+void CsvParser::parseSubField(StringBuilder sb)
+{
+    in >> ch;
+    while ((ch != '"') && (ch != CsvConst::E_O_F)) {
+        sb.Append(ch);
+        in >> ch;
+    }
+    in.unget();
+}
+
+bool CsvParser::isBadSimpleFieldChar(char c)
+{
+    return isSpace(c) || isFieldTerminator(c) || (c == '"');
+}
+
+std::string CsvParser::parseSimpleField()
+{
+    in >> ch;
+    if (isBadSimpleFieldChar(ch)) {
+        in.unget();
+        return String.Empty;
+    }
+
+    StringBuilder sb = new StringBuilder();
+    sb.Append(ch);
+    in >> ch;
+    while (!isBadSimpleFieldChar(ch)) {
+        sb.Append(ch);
+        in >> ch;
+    }
+    in.unget();
+
+    return sb.ToString();
+}
+
+bool CsvParser::processDoubleQuote(char ch)
+{
+    if ((ch == '"') && (reader.Peek() == '"')) {
+        reader.Read(); // discard second quote of double
+        return true;
+    }
+    return false;
+}
+
+
+*/
+
+
+
+
+
+
+
 
 int CsvParser::numRows() {
     return 18;
 }
 
+
+/*
+
+Tokenizer::Tokenizer(std::string s) {
+    m_string = s;
+    m_index = 0;
+    m_haveUnreadChar = false;
+}
+
+void Tokenizer::skipCrInCrLf() {
+    if ((m_string[m_index] == '\r') && (m_index + 1 < m_string.length()) && (m_string[m_index + 1] == '\n'))
+        m_index++;
+}
+
+char Tokenizer::mapCrToLf(char c) {
+    if (c == '\r')
+        return '\n';
+    return c;
+}
+
+char Tokenizer::Peek() {
+    if (m_haveUnreadChar)
+        return m_unreadChar;
+    if (m_index < m_string.length())
+        return mapCrToLf(m_string[m_index]);
+    //TODO: typedef or similar
+    return '\0';
+}
+
+char Tokenizer::Read() {
+    if (m_haveUnreadChar) {
+        m_haveUnreadChar = false;
+        return m_unreadChar;
+    }
+    if (m_index < m_string.length()) {
+        skipCrInCrLf();
+        return mapCrToLf(m_string[m_index++]);
+    }
+    //TODO: typedef or similar
+    return '\0';
+}
+
+bool Tokenizer::Unread(char c) {
+    if (m_haveUnreadChar) {
+        m_errorStr = "Unread() cannot accept more than one pushed back character";
+        return false;
+    }
+    m_haveUnreadChar = true;
+    m_unreadChar = c;
+    return true;
+}
+*/
