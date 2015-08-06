@@ -17,18 +17,55 @@
 
 #include <fstream>
 #include <iostream>
+#include <vector>
 #include "CsvParser.h"
+
 
 
 int main()
 {
-    std::ifstream file("/home/me/projects/res/test.csv", std::ios::in);
-    if (!file)
-        return 1;
 
-    CsvParser csv(file);
-    std::cout << csv.numRows() << std::endl;
-    file.close();
+    csvtable parsed;
+    std::vector<std::string> filenames;
+//    filenames.push_back("onerow_emptylines.csv");
+//    filenames.push_back("onefield.csv");
+//    filenames.push_back("onerow.csv");
+//    filenames.push_back("test.csv");
+    filenames.push_back("ciccione.csv");
+
+    while (filenames.size()) {
+        std::string current("../input/");
+        current+=filenames.back();
+        filenames.pop_back();
+        std::ifstream file(current.c_str(), std::ios::in);
+        std::cout <<"Filepath: " <<current.c_str() <<std::endl;
+        if (!file)
+            return 1;
+
+        CsvParser csv(file);
+        if (!file.is_open()) {
+            std::cout <<"File " <<current.c_str() <<" is closed!" <<std::endl;
+        }
+        std::cout <<"Parsing " <<current.c_str() <<std::endl;
+        csv.parse();
+        file.close();
+
+        std::cout<<"****++++****++++****++++\n";
+        if (!csv.getParsedData(parsed))
+            std::cout<<"errors are present in source data"<<std::endl;
+
+        csvtable::iterator it = parsed.begin();
+        int rows=parsed.size();
+        size_t columns=(*it).size();
+        int cr=0;
+        std::cout<<rows <<" rows, " <<columns <<" columns" <<std::endl;
+        for (;it != parsed.end(); ++it) {
+            cr++;
+//            if ((*it).size() != columns) {
+                std::cout<<(*it).at(0)<<std::endl;
+//            }
+        }
+    }
     return 0;
 }
 

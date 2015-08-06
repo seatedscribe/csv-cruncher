@@ -16,295 +16,292 @@
  */
 
 #include <iostream>
+#include <sstream>
 #include <fstream>
 #include "CsvParser.h"
 
-//using namespace std;
 
+//TODO: currently, delimiter and comment are both a single char
+void CsvParser::setComment(std::string comment) {}
+void CsvParser::setSeparator(std::string separator) {}
 
-//TODO: ridefinire peek() e read() copiando il comportamento da Tokenizer
+void CsvParser::checkCoherence()
+{
+    bool result = true;
+    csvtable::iterator it = table.begin();
+    int rows=table.size();
+    size_t columns=(*it).size();
+    int cr=0; //current row
+    std::cout
+      <<length <<" bytes; "
+      <<rows <<" rows, " <<columns <<" columns" <<std::endl;
+    for (;it != table.end(); ++it) {
+        cr++;
+        if ((*it).size() != columns) {
+            std::cout
+               <<"*** WARNING: row " <<cr
+               <<" has different size than header ("
+               <<(*it).size() <<" instead of " <<columns <<")"
+               <<std::endl;
+            result = false;
+        }
+    }
+    isGood = result;
+}
 
-namespace CsvConst {
-    char delimiter=',';
-    char E_O_F='\0';
+bool CsvParser::getParsedData(csvtable& table)
+{
+    table = this->table;
+    return isGood;
 }
 
 CsvParser::CsvParser(std::istream& data)
     : in(data)
+    , delimiter(',')
+    , comment('#')
+    , ch()
+    , currentLine(1)
+    , isGood(false)
 {
-    parseCsvFile();
+    in.seekg (0, in.end);
+    length = in.tellg();
+    in.seekg (0, in.beg);
 }
 
-void CsvParser::parseCsvFile()
+void CsvParser::parse()
 {
-    int i=0;
-    while (in.peek() != CsvConst::E_O_F) {
-        parseCsvRecord();
-        std::cout << i++<<std::endl;
+    parseFile();
+    checkCoherence();
+}
+
+void CsvParser::parseFile()
+{
+    parseRecord();
+    ch = in.peek();
+    while (ch != EOF) {
+        if (!skipEndline()) {
+            std::cout <<"\n!\n!!\n!!!\n*******\nparse error @line "
+                     <<currentLine << std::endl;
+            dumpLastRow();
+            return;
+        }
+        currentLine++;
+        parseRecord();
     }
 }
 
-void CsvParser::parseCsvRecord()
+void CsvParser::parseRecord()
 {
-    parseCsvStringList();
-
-    in >> ch;
-    std::cout <<"record: " <<ch;
-    if (ch == CsvConst::E_O_F) {
+    if (isComment()) {
+        skipLine();
+    }
+    else {
+        do {
+            parseField();
+            in.get(ch);
+        } while (ch == delimiter);
         in.unget();
-        ch = '\n';
-        std::cout <<" unget: " << ch;
-    }
-    std::cout <<" after: " << ch <<std::endl;
-    if (ch != '\n') {
-        std::cout << "End of record was expected but more data exists." <<std::endl;
-        return;
+        table.push_back(parsedRow);
+        parsedRow.clear();
+        dumpLastRow();
     }
 }
 
-void CsvParser::parseCsvStringList()
-{
-    do {
-        parseRawString();
-        in >> ch;
-        std::cout << ch <<std::endl;
-    } while (ch == CsvConst::delimiter);
-    in.unget();
-}
-
-bool CsvParser::isFieldTerminator(char c)
-{
-    return ((c == CsvConst::delimiter) || (c == '\n') || (c == CsvConst::E_O_F));
-}
-
-bool CsvParser::isSpace(char c)
-{
-    return ((c == ' ') | (c == '\t'));
-}
-
-void CsvParser::parseOptionalSpaces()
-{
-    do {
-        in >> ch;
-    } while (isSpace(ch));
-    in.unget();
-}
-
-void CsvParser::parseRawString()
-{
-    parseOptionalSpaces();
-    parseRawField();
-    if (!isFieldTerminator(in.peek()))
-        parseOptionalSpaces();
-}
-
-void CsvParser::parseRawField()
+void CsvParser::parseField()
 {
     std::string fieldValue;
-
     ch = in.peek();
     if (!isFieldTerminator(ch)) {
-        if (ch == '"')
-            fieldValue = parseQuotedField();
-//        else
-//            fieldValue = parseSimpleField();
+        if (isQuote(ch))
+            fieldValue = parseQuoted();
+        else
+            fieldValue = parseSimple();
     }
+    parsedRow.push_back(fieldValue);
+    //std::cout<<fieldValue<<std::endl;
 }
 
-std::string CsvParser::parseQuotedField()
+std::string CsvParser::parseQuoted()
 {
-    in >> ch; // read and discard initial quote
+    std::stringstream ss;
+    //skip quote
+    in.get();
 
-    std::string field = parseEscapedField();
+    in.get(ch);
+    //TODO: isSingleQuote should be isQualifier (see keepass csv importer)
+    while (!in.eof() && !isSingleQuote(ch) &&
+             ( isText(ch)          ||
+               isComma(ch)         ||
+               isCRLF(ch)          ||
+               isDoubleQuote(ch)   ||
+               isDoubleEscape(ch)  ||
+               isSingleEscape(ch)))
+    {
+        if (isSingleEscape(ch) ||
+            isDoubleEscape(ch) ||
+            isDoubleQuote(ch))
+        {
+            in.get(ch);
+        }
 
-    in >> ch;
-    if (ch != '"') {
-        in.unget();
-        std::cout <<"Quoted field has no terminating double quote" <<std::endl;
-        return std::string();
+        ss << ch;
+        in.get(ch);
     }
-    return field;
+    //just skipped last quote
+    return ss.str();
 }
 
-
-/*
-
-private string parseEscapedField(ICharTokenizer reader) {
-      StringBuilder sb = new StringBuilder();
-
-      parseSubField(reader, sb);
-      char ch = reader.Read();
-      while (processDoubleQuote(reader, ch)) {
-        sb.Append('"');
-        parseSubField(reader, sb);
-        ch = reader.Read();
-      }
-      reader.Unread(ch);
-
-      return sb.ToString();
-    }
-
-    private void parseSubField(ICharTokenizer reader, StringBuilder sb) {
-      char ch = reader.Read();
-      while ((ch != '"') && (ch != CsvConstants.EOF)) {
-        sb.Append(ch);
-        ch = reader.Read();
-      }
-      reader.Unread(ch);
-    }
-
-    private bool isBadSimpleFieldChar(char c) {
-      return isSpace(c) || isFieldTerminator(c) || (c == '"');
-    }
-
-    private string parseSimpleField(ICharTokenizer reader) {
-
-      char ch = reader.Read();
-      if (isBadSimpleFieldChar(ch)) {
-        reader.Unread(ch);
-        return String.Empty;
-      }
-
-      StringBuilder sb = new StringBuilder();
-      sb.Append(ch);
-      ch = reader.Read();
-      while (!isBadSimpleFieldChar(ch)) {
-        sb.Append(ch);
-        ch = reader.Read();
-      }
-      reader.Unread(ch);
-
-      return sb.ToString();
-    }
-
-*/
-
-
-std::string CsvParser::parseEscapedField()
+std::string CsvParser::parseSimple()
 {
-/*    StringBuilder sb = new StringBuilder();
-
-    parseSubField(sb);
-    in >> ch;
-    while (processDoubleQuote(ch)) {
-        sb.Append('"');
-        parseSubField(sb);
-        in >> ch;
+    std::stringstream ss;
+    in.get(ch);
+    while ((isText(ch) || isQuote(ch)) && !in.eof()) {
+        ss << ch;
+        in.get(ch);
     }
     in.unget();
-
-    return sb.ToString();
-    */
+    return ss.str();
 }
 
-/*
-void CsvParser::parseSubField(StringBuilder sb)
+bool CsvParser::isComma(char c)
 {
-    in >> ch;
-    while ((ch != '"') && (ch != CsvConst::E_O_F)) {
-        sb.Append(ch);
-        in >> ch;
+    if (c == 0x2C)
+       return true;
+    return false;
+}
+
+bool CsvParser::isDoubleEscape(char c)
+{
+    if (!isEscape(c))
+        return false;
+    if (!isEscape(in.peek()))
+        return false;
+    return true;
+}
+
+bool CsvParser::isSingleEscape(char c)
+{
+    if (!isEscape(c))
+        return false;
+    if (isEscape(in.peek()))
+        return false;
+    return true;
+}
+
+bool CsvParser::isEscape(char c)
+{
+    if (c == 0x5C)
+       return true;
+    return false;
+}
+
+bool CsvParser::isComment()
+{
+    bool result = false;
+    int pos = in.tellg();
+
+    do {
+        ch = in.get();
+    } while (isSpace(ch) && !in.eof());
+
+    if (ch == 0x23) {
+           result = true;
     }
-    in.unget();
+    in.seekg(pos);
+    return result;
 }
 
-bool CsvParser::isBadSimpleFieldChar(char c)
+bool CsvParser::isDoubleQuote(char c)
 {
-    return isSpace(c) || isFieldTerminator(c) || (c == '"');
+    if (!isQuote(c))
+        return false;
+    if (!isQuote(in.peek()))
+        return false;
+    return true;
 }
 
-std::string CsvParser::parseSimpleField()
+bool CsvParser::isSingleQuote(char c)
 {
-    in >> ch;
-    if (isBadSimpleFieldChar(ch)) {
-        in.unget();
-        return String.Empty;
+    if (!isQuote(c))
+        return false;
+    if (isQuote(in.peek()))
+        return false;
+    return true;
+}
+
+bool CsvParser::isQuote(char c)
+{
+    if (c == 0x22)
+       return true;
+    return false;
+}
+
+bool CsvParser::isText(char c)
+{
+    if ( ((c == 0x20) || (c == 0x21)) ||
+         ((c >= 0x23) && (c <= 0x2B)) ||
+         ((c >= 0x2D) && (c <= 0x7E))
+       )
+          return true;
+    return false;
+}
+
+void CsvParser::skipLine()
+{
+    std::string s;
+    getline(in, s);
+    std::cout <<"skipping |" <<s.substr(0,s.length()-4) <<"...|" <<std::endl;
+    int p=in.tellg();
+    //should work with every EOL format
+    in.seekg(p-1);
+}
+
+bool CsvParser::skipEndline()
+{
+    in.get(ch);
+    if (ch == '\r') {
+        in.get(ch);
+        if (ch == '\n') {
+            return true;
+        }
     }
-
-    StringBuilder sb = new StringBuilder();
-    sb.Append(ch);
-    in >> ch;
-    while (!isBadSimpleFieldChar(ch)) {
-        sb.Append(ch);
-        in >> ch;
-    }
-    in.unget();
-
-    return sb.ToString();
-}
-
-bool CsvParser::processDoubleQuote(char ch)
-{
-    if ((ch == '"') && (reader.Peek() == '"')) {
-        reader.Read(); // discard second quote of double
+    else if (ch == '\n') {
         return true;
     }
     return false;
 }
 
-
-*/
-
-
-
-
-
-
-
-
-int CsvParser::numRows() {
-    return 18;
+bool CsvParser::isCRLF(char c)
+{
+    // according to my grammar
+    // CRLF = CR LF / CR / LF
+    if ((c == '\r') || (c == '\n'))
+        return true;
+    return false;
 }
 
-
-/*
-
-Tokenizer::Tokenizer(std::string s) {
-    m_string = s;
-    m_index = 0;
-    m_haveUnreadChar = false;
+bool CsvParser::isSpace(char c)
+{
+    if (c == 0x20)
+       return true;
+    return false;
 }
 
-void Tokenizer::skipCrInCrLf() {
-    if ((m_string[m_index] == '\r') && (m_index + 1 < m_string.length()) && (m_string[m_index + 1] == '\n'))
-        m_index++;
+bool CsvParser::isDelimiter(char c)
+{
+    return (c == delimiter);
 }
 
-char Tokenizer::mapCrToLf(char c) {
-    if (c == '\r')
-        return '\n';
-    return c;
+bool CsvParser::isFieldTerminator(char c)
+{
+    return (isDelimiter(c) || (c == '\n') || (c == EOF));
 }
 
-char Tokenizer::Peek() {
-    if (m_haveUnreadChar)
-        return m_unreadChar;
-    if (m_index < m_string.length())
-        return mapCrToLf(m_string[m_index]);
-    //TODO: typedef or similar
-    return '\0';
+void CsvParser::dumpLastRow() {
+    csvrow::iterator it = table.back().begin();
+//TODO:   table.at(currentLine).begin()
+    std::cout <<"@" <<currentLine <<" ";
+    while (it != table.back().end())
+        std::cout <<"|" <<*it++;
+    std::cout<<"|"<<std::endl;
 }
-
-char Tokenizer::Read() {
-    if (m_haveUnreadChar) {
-        m_haveUnreadChar = false;
-        return m_unreadChar;
-    }
-    if (m_index < m_string.length()) {
-        skipCrInCrLf();
-        return mapCrToLf(m_string[m_index++]);
-    }
-    //TODO: typedef or similar
-    return '\0';
-}
-
-bool Tokenizer::Unread(char c) {
-    if (m_haveUnreadChar) {
-        m_errorStr = "Unread() cannot accept more than one pushed back character";
-        return false;
-    }
-    m_haveUnreadChar = true;
-    m_unreadChar = c;
-    return true;
-}
-*/

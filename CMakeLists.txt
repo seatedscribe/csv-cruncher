@@ -19,5 +19,28 @@ cmake_minimum_required(VERSION 2.8)
 
 #add_executable(${PROJECT_NAME} ${SRC_LIST})
 
+macro(add_gcc_compiler_cxxflags FLAGS)
+  if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_COMPILER_IS_CLANGXX)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${FLAGS}")
+  endif()
+endmacro(add_gcc_compiler_cxxflags)
+
+macro(add_gcc_compiler_cflags FLAGS)
+  if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_CLANG)
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${FLAGS}")
+  endif()
+endmacro(add_gcc_compiler_cflags)
+
+macro(add_gcc_compiler_flags FLAGS)
+  add_gcc_compiler_cxxflags("${FLAGS}")
+  add_gcc_compiler_cflags("${FLAGS}")
+endmacro(add_gcc_compiler_flags)
+
+add_gcc_compiler_flags("-O0 -g -Wall -Wextra -Wundef -Wpointer-arith -Wno-long-long")
+add_gcc_compiler_cxxflags("-Wnon-virtual-dtor -Wold-style-cast -Woverloaded-virtual")
+
+
 add_subdirectory(src)
+add_subdirectory(input)
+
 

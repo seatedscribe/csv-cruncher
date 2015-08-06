@@ -19,53 +19,57 @@
 #define CSVPARSER_H
 
 #include <string>
+#include <deque>
 
-class Tokenizer {
-public:
-    Tokenizer(std::string s);
-    virtual ~Tokenizer() {}
-    char Read();
-    char Peek();
-    bool Unread(char c);
-private:
-   std::string m_string;
-   std::string m_errorStr;
-   bool m_error;
-   bool m_haveUnreadChar;
-   char m_unreadChar;
-   int m_index;
-   void skipCrInCrLf();
-   char mapCrToLf(char c);
-};
 
-class StringBuilder;
+typedef std::deque<std::string> csvrow;
+typedef std::deque<csvrow> csvtable;
 
 class CsvParser {
 public:
     CsvParser(std::istream &data);
     virtual ~CsvParser() {}
-    int numRows();
-
+    void parse();
+    void setComment(std::string comment);
+    void setSeparator(std::string separator);
+    bool getParsedData(csvtable& table);
 private:
     std::istream& in;
+    int length;
+    char delimiter;
+    char comment;
     char ch;
-    void parseCsvFile();
-    void parseCsvRecord();
-    void parseCsvStringList();
-    bool isFieldTerminator(char c);
+    //currentLine does not count comments
+    int currentLine;
+    csvrow parsedRow;
+    csvtable table;
+    bool isGood;
+
+    void parseFile();
+    void parseRecord();
+    void parseField();
+    std::string parseQuoted();
+    std::string parseSimple();
+    //TODO: isComma --> isDelimiter()
+    bool isComma(char c);
+    bool isDoubleQuote(char c);
+    bool isSingleQuote(char c);
+    bool isQuote(char c);
+    bool isDoubleEscape(char c);
+    bool isSingleEscape(char c);
+    bool isEscape(char c);
+    bool isComment();
+    bool isCRLF(char c);
     bool isSpace(char c);
-    void parseOptionalSpaces();
-    void parseRawString();
-    void parseRawField();
-    std::string parseQuotedField();
-    std::string parseEscapedField();
-    /*
-    void parseSubField(StringBuilder sb);
-    bool isBadSimpleFieldChar(char c);
-    std::string parseSimpleField();
-    void setCommentDelimiter(std::string delimiter);
-    */
-//    Tokenizer reader;
+    bool isDelimiter(char c);
+    bool isText(char c);
+    bool skipEndline();
+    void skipLine();
+    bool isFieldTerminator(char c);
+
+    void checkCoherence();
+    void dumpLastRow();
+
 };
 
 #endif //CSVPARSER_H
