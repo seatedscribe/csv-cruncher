@@ -1,0 +1,20 @@
+c 1,c2,c3,c4
+Account #1,Michael321,1234;5,http://web2.coz
+#se il file è generato da excel/libreoffice, la validazione viene data per buona
+"bhat.com", 48 , ,"Saturday, April 23, 2005", "Mack ""The Knife"""
+
+
+#riferirsi ai formati d'esempio relativi.
+#il piu complicato da gestire è il file di testo puro, che va anche validato.
+
+#http://www.regular-expressions.info/quickstart.html
+#http://regexr.com/
+
+
+"Account","Login Name","Password","Web Site","Comments"
+Account #1,Michael321,1234;5,http://web2.coz
+Account #2,login,"PAss,\\"W*rD,",web3.coz,comment
+  #    should skip this
+"A1",,"P1","3,"Notes"
+"A2",C2,"P2","WRONG,"Notes"
+# another comment

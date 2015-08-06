@@ -41,6 +41,7 @@ add_gcc_compiler_cxxflags("-Wnon-virtual-dtor -Wold-style-cast -Woverloaded-virt
 
 
 add_subdirectory(src)
-add_subdirectory(input)
+add_subdirectory(examples)
+
 
 

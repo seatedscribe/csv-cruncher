@@ -30,11 +30,10 @@ int main()
 //    filenames.push_back("onerow_emptylines.csv");
 //    filenames.push_back("onefield.csv");
 //    filenames.push_back("onerow.csv");
-//    filenames.push_back("test.csv");
-    filenames.push_back("ciccione.csv");
+    filenames.push_back("test.csv");
 
     while (filenames.size()) {
-        std::string current("../input/");
+        std::string current("../examples/");
         current+=filenames.back();
         filenames.pop_back();
         std::ifstream file(current.c_str(), std::ios::in);
