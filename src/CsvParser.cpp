@@ -20,58 +20,72 @@
 #include <fstream>
 #include "CsvParser.h"
 
+#define DBG_MSG false
+//TODO: currently, separator and comment are both a single char
+void CsvParser::setComment_(std::string comment) { std::string c(comment); }
+void CsvParser::setSeparator_(std::string separator) { std::string c(separator); }
 
-//TODO: currently, delimiter and comment are both a single char
-void CsvParser::setComment(std::string comment) {}
-void CsvParser::setSeparator(std::string separator) {}
-
-void CsvParser::checkCoherence()
+std::string CsvParser::getError()
 {
-    bool result = true;
-    csvtable::iterator it = table.begin();
-    int rows=table.size();
-    size_t columns=(*it).size();
-    int cr=0; //current row
-    std::cout
-      <<length <<" bytes; "
-      <<rows <<" rows, " <<columns <<" columns" <<std::endl;
-    for (;it != table.end(); ++it) {
-        cr++;
-        if ((*it).size() != columns) {
-            std::cout
-               <<"*** WARNING: row " <<cr
-               <<" has different size than header ("
-               <<(*it).size() <<" instead of " <<columns <<")"
-               <<std::endl;
-            result = false;
-        }
-    }
-    isGood = result;
-}
-
-bool CsvParser::getParsedData(csvtable& table)
-{
-    table = this->table;
-    return isGood;
+    return errorMsg.str();
 }
 
 CsvParser::CsvParser(std::istream& data)
     : in(data)
-    , delimiter(',')
+    , separator(',')
     , comment('#')
-    , ch()
-    , currentLine(1)
-    , isGood(false)
 {
     in.seekg (0, in.end);
     length = in.tellg();
     in.seekg (0, in.beg);
 }
 
-void CsvParser::parse()
+/*void CsvParser::loadContent()
 {
+    //best fast method to read from file to a string:
+    //std::string get_file_contents(const char *filename)
+    //{
+    //  std::ifstream in(filename, std::ios::in | std::ios::binary);
+    //  if (in)
+    //  {
+    //    std::string contents;
+    //    in.seekg(0, std::ios::end);
+    //    contents.resize(in.tellg());
+    //    in.seekg(0, std::ios::beg);
+    //    in.read(&contents[0], contents.size());
+    //    in.close();
+    //    return(contents);
+    //  }
+    //  throw(errno);
+}
+*/
+
+
+
+void CsvParser::reset()
+{
+    in.seekg(0, std::ios::beg);
+    csvLine = 1;
+    columns = 0;
+    isGood = true;
+    while (table.size())
+        table.pop_back();
+    table.clear();
+    errorMsg.str("");
+    errorMsg.clear();
+}
+
+bool CsvParser::parse()
+{
+    reset();
     parseFile();
-    checkCoherence();
+    int rows=table.size();
+    size_t columns=table.at(0).size();
+    errorMsg
+      <<length <<" bytes; "
+      <<rows <<" rows, " <<columns <<" columns" <<std::endl;
+
+    return isGood;
 }
 
 void CsvParser::parseFile()
@@ -80,12 +94,13 @@ void CsvParser::parseFile()
     ch = in.peek();
     while (ch != EOF) {
         if (!skipEndline()) {
-            std::cout <<"\n!\n!!\n!!!\n*******\nparse error @line "
-                     <<currentLine << std::endl;
-            dumpLastRow();
+            errorMsg <<"*** parse error @line "
+                     <<csvLine << std::endl;
+            dumpRow(table.size()-1);
+            isGood = false;
             return;
         }
-        currentLine++;
+        csvLine++;
         parseRecord();
     }
 }
@@ -99,11 +114,27 @@ void CsvParser::parseRecord()
         do {
             parseField();
             in.get(ch);
-        } while (ch == delimiter);
+        } while (ch == separator);
         in.unget();
+
+        if (0 == columns)
+            columns = parsedRow.size();
+        else if (parsedRow.size() != columns) {
+            errorMsg
+               <<"*** WARNING: row " <<csvLine
+               <<" has different size than header ("
+               <<parsedRow.size() <<" instead of " <<columns <<")"
+               <<std::endl;
+            isGood = false;
+        }
+
         table.push_back(parsedRow);
         parsedRow.clear();
-        dumpLastRow();
+        if (DBG_MSG) {
+            errorMsg <<"DBG -->";
+            dumpRow(table.size()-1);
+//            std::cout <<errorMsg.str()<<std::endl;
+        }
     }
 }
 
@@ -131,7 +162,7 @@ std::string CsvParser::parseQuoted()
     //TODO: isSingleQuote should be isQualifier (see keepass csv importer)
     while (!in.eof() && !isSingleQuote(ch) &&
              ( isText(ch)          ||
-               isComma(ch)         ||
+               isSeparator(ch)     ||
                isCRLF(ch)          ||
                isDoubleQuote(ch)   ||
                isDoubleEscape(ch)  ||
@@ -161,13 +192,6 @@ std::string CsvParser::parseSimple()
     }
     in.unget();
     return ss.str();
-}
-
-bool CsvParser::isComma(char c)
-{
-    if (c == 0x2C)
-       return true;
-    return false;
 }
 
 bool CsvParser::isDoubleEscape(char c)
@@ -204,7 +228,7 @@ bool CsvParser::isComment()
         ch = in.get();
     } while (isSpace(ch) && !in.eof());
 
-    if (ch == 0x23) {
+    if (ch == comment) {
            result = true;
     }
     in.seekg(pos);
@@ -238,9 +262,10 @@ bool CsvParser::isQuote(char c)
 
 bool CsvParser::isText(char c)
 {
+    if (isSeparator(c))
+        return false;
     if ( ((c == 0x20) || (c == 0x21)) ||
-         ((c >= 0x23) && (c <= 0x2B)) ||
-         ((c >= 0x2D) && (c <= 0x7E))
+         ((c >= 0x23) && (c <= 0x7E))
        )
           return true;
     return false;
@@ -250,7 +275,11 @@ void CsvParser::skipLine()
 {
     std::string s;
     getline(in, s);
-    std::cout <<"skipping |" <<s.substr(0,s.length()-4) <<"...|" <<std::endl;
+    if (DBG_MSG) {
+        errorMsg <<"DBG -->@" <<csvLine
+                 <<" skp |"
+                 <<s.substr(0,s.length()-4) <<"...|" <<std::endl;
+    }
     int p=in.tellg();
     //should work with every EOL format
     in.seekg(p-1);
@@ -287,21 +316,39 @@ bool CsvParser::isSpace(char c)
     return false;
 }
 
-bool CsvParser::isDelimiter(char c)
+bool CsvParser::isSeparator(char c)
 {
-    return (c == delimiter);
+    return (c == separator);
 }
 
 bool CsvParser::isFieldTerminator(char c)
 {
-    return (isDelimiter(c) || (c == '\n') || (c == EOF));
+    return (isSeparator(c) || (c == '\n') || (c == EOF));
 }
 
-void CsvParser::dumpLastRow() {
-    csvrow::iterator it = table.back().begin();
-//TODO:   table.at(currentLine).begin()
-    std::cout <<"@" <<currentLine <<" ";
-    while (it != table.back().end())
-        std::cout <<"|" <<*it++;
-    std::cout<<"|"<<std::endl;
+void CsvParser::setSeparator(char c)
+{
+    separator = c;
+}
+
+void CsvParser::setComment(char c)
+{
+    comment = c;
+}
+
+void CsvParser::getParsedData(csvtable& table)
+{
+    table = this->table;
+}
+
+void CsvParser::dumpRow(std::size_t row) {
+    if (row >= table.size()) {
+        errorMsg << "Internal error, index too large\n";
+        return;
+    }
+    csvrow::iterator it = table.at(row).begin();
+    errorMsg <<"@" <<csvLine <<" ";
+    while (it != table.at(row).end())
+        errorMsg <<"|" <<*it++;
+    errorMsg <<"|\n";
 }

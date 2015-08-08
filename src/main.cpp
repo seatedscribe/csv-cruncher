@@ -30,57 +30,49 @@ int main()
 //    filenames.push_back("onerow_emptylines.csv");
 //    filenames.push_back("onefield.csv");
 //    filenames.push_back("onerow.csv");
-    filenames.push_back("test.csv");
+//    filenames.push_back("test.csv");
+    filenames.push_back("sol049.csv");
 
     while (filenames.size()) {
         std::string current("../examples/");
         current+=filenames.back();
         filenames.pop_back();
-        std::ifstream file(current.c_str(), std::ios::in);
-        std::cout <<"Filepath: " <<current.c_str() <<std::endl;
-        if (!file)
-            return 1;
+        std::ifstream file(current.c_str(), std::ios::in | std::ios::binary);
+        if (!file) {
+            std::cout <<"File not found: " <<current.c_str() <<std::endl;
+            continue;
+        }
 
         CsvParser csv(file);
         if (!file.is_open()) {
-            std::cout <<"File " <<current.c_str() <<" is closed!" <<std::endl;
+            std::cout <<"File " <<current.c_str() <<" not open!" <<std::endl;
+            continue;
         }
-        std::cout <<"Parsing " <<current.c_str() <<std::endl;
-        csv.parse();
-        file.close();
 
+        std::cout <<"Parsing " <<current.c_str() <<std::endl;
+        if(!csv.parse()) {
+            std::cout<<"WARNING: errors found in source data!"<<std::endl;
+            std::cout<<csv.getError()<<std::endl;
+
+            std::cout<<"Trying with another separator..."<<std::endl;
+            csv.setSeparator(';');
+            if (csv.parse())
+                std::cout<<"Good!"<<std::endl;
+            else std::cout<<csv.getError()<<std::endl;
+        }
+
+        file.close();
         std::cout<<"****++++****++++****++++\n";
-        if (!csv.getParsedData(parsed))
-            std::cout<<"errors are present in source data"<<std::endl;
+        csv.getParsedData(parsed);
 
         csvtable::iterator it = parsed.begin();
         int rows=parsed.size();
-        size_t columns=(*it).size();
-        int cr=0;
+        std::size_t columns=(*it).size();
         std::cout<<rows <<" rows, " <<columns <<" columns" <<std::endl;
         for (;it != parsed.end(); ++it) {
-            cr++;
-//            if ((*it).size() != columns) {
-                std::cout<<(*it).at(0)<<std::endl;
-//            }
+//                std::cout<<(*it).at(0)<<std::endl;
         }
     }
     return 0;
 }
 
-//best fast method to read from file to a string:
-//std::string get_file_contents(const char *filename)
-//{
-//  std::ifstream in(filename, std::ios::in | std::ios::binary);
-//  if (in)
-//  {
-//    std::string contents;
-//    in.seekg(0, std::ios::end);
-//    contents.resize(in.tellg());
-//    in.seekg(0, std::ios::beg);
-//    in.read(&contents[0], contents.size());
-//    in.close();
-//    return(contents);
-//  }
-//  throw(errno);
-//}

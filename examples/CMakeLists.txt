@@ -13,5 +13,5 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-#add_library(none EXCLUDE_FROM_ALL test.csv)
-configure_file(test.csv test.csv COPYONLY)
+configure_file(test.csv test.csv NEWLINE_STYLE WIN32)
+configure_file(sol049.csv sol049.csv NEWLINE_STYLE UNIX)

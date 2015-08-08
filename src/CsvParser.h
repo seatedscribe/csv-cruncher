@@ -18,40 +18,47 @@
 #ifndef CSVPARSER_H
 #define CSVPARSER_H
 
-#include <string>
 #include <deque>
-
+#include <string>
+#include <sstream>
 
 typedef std::deque<std::string> csvrow;
 typedef std::deque<csvrow> csvtable;
 
 class CsvParser {
 public:
+    CsvParser(std::string filename);
     CsvParser(std::istream &data);
     virtual ~CsvParser() {}
-    void parse();
-    void setComment(std::string comment);
-    void setSeparator(std::string separator);
-    bool getParsedData(csvtable& table);
+    bool parse();
+    void setComment_(std::string comment);
+    void setSeparator_(std::string separator);
+    void setComment(char c);
+    void setSeparator(char c);
+//    void ignoreEmptyRows(bool ignore);
+    void getParsedData(csvtable& table);
+    std::string getError();
+
 private:
     std::istream& in;
     int length;
-    char delimiter;
+    std::size_t columns;
+    char separator;
     char comment;
     char ch;
-    //currentLine does not count comments
-    int currentLine;
+    //csvLine tracks the currently parsed row
+    std::size_t csvLine;
     csvrow parsedRow;
     csvtable table;
     bool isGood;
+    std::stringstream errorMsg;
 
+    void reset();
     void parseFile();
     void parseRecord();
     void parseField();
     std::string parseQuoted();
     std::string parseSimple();
-    //TODO: isComma --> isDelimiter()
-    bool isComma(char c);
     bool isDoubleQuote(char c);
     bool isSingleQuote(char c);
     bool isQuote(char c);
@@ -61,14 +68,12 @@ private:
     bool isComment();
     bool isCRLF(char c);
     bool isSpace(char c);
-    bool isDelimiter(char c);
+    bool isSeparator(char c);
     bool isText(char c);
     bool skipEndline();
     void skipLine();
     bool isFieldTerminator(char c);
-
-    void checkCoherence();
-    void dumpLastRow();
+    void dumpRow(std::size_t row);
 
 };
 

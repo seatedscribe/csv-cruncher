@@ -32,11 +32,12 @@ to validate the case of "escaped characters". This is the result:
 CSV CRUNCHER 
 
 stream      = record *(CRLF record) EOF
-record      = field *(COMMA field) / comment
+record      = field *(separator field) / comment
 field       = quoted / simple
-quoted      = DQUOTE *(TEXT / COMMA / CR / LF / 2DQUOTE / 2ESCAPE / ESCAPE TEXT) DQUOTE
+quoted      = DQUOTE *(separator / TEXT / CR / LF / 2DQUOTE / 2ESCAPE / ESCAPE TEXT) DQUOTE
 simple      = *(TEXT / DQUOTE)
 comment     = *(SPACE) COMMENT
+separator   = COMMA / COLON / SEMICOLON / TEXT
 COMMA       = %x2C
 COMMENT     = %x23
 DQUOTE      = %x22
@@ -45,7 +46,7 @@ CR          = %x0D
 LF          = %x0A 
 CRLF        = CR LF / CR / LF
 SPACE       = %x20
-TEXT        = %x20-21 / %x23-2B / %x2D-7E / (empty string)
+TEXT        = %x20-21 / %x23-7E / (empty string)
 
 
 
