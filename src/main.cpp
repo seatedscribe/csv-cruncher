@@ -17,7 +17,7 @@
 
 #include <fstream>
 #include <iostream>
-#include <vector>
+#include <deque>
 #include "CsvParser.h"
 
 void tryParse(std::ifstream &file);
@@ -26,8 +26,8 @@ csvtable parsed;
 int main()
 {
 
-    std::vector<std::string> filenames;
-    filenames.push_back("u_diffcolumns.csv");
+    std::deque<std::string> filenames;
+/*    filenames.push_back("u_diffcolumns.csv");
     filenames.push_back("d_diffcolumns.csv");
 
     filenames.push_back("u_sol049.csv");
@@ -47,11 +47,14 @@ int main()
 
     filenames.push_back("u_empty.csv");
     filenames.push_back("d_empty.csv");
+*/
+    filenames.push_back("u_malquoted.csv");
+    filenames.push_back("d_malquoted.csv");
 
     while (filenames.size()) {
         std::string current("../examples/");
-        current+=filenames.back();
-        filenames.pop_back();
+        current+=filenames.front();
+        filenames.pop_front();
 
         std::ifstream file(current.c_str(), std::ios::in | std::ios::binary);
 
@@ -61,8 +64,8 @@ int main()
         }
 
         if (!file.is_open()) {
-        std::cout <<"File " <<current.c_str() <<" not open!" <<std::endl;
-        continue;
+            std::cout <<"File " <<current.c_str() <<" not open!" <<std::endl;
+            continue;
         }
 
         std::cout <<"\nParsing " <<current.c_str() <<std::endl;
@@ -86,7 +89,7 @@ void tryParse(std::ifstream& file)
             std::cout<<"Good at second shot!"<<std::endl;
         else std::cout<<csv.getError()<<std::endl;
     }
-    else std::cout<<"No formal errors; check if you expect:"<<std::endl;
+    else std::cout<<"No formal errors; verify that you expected:"<<std::endl;
 
     csv.getParsedData(parsed);
 

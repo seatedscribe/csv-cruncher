@@ -3,8 +3,8 @@ C++ flavoured CSV parser with a BNF approach for syntax validation.
 
 This parser aims at validating most of the CSV formats out there, or dying trying.
 It is built on the top of the RFC4180 which to me is a good starting point,
-but since it is not considering all the different flavours it needed to be slightly
-extended (e.g. ignoring comments)
+but since it is not considering all the different flavours actually used in the real world,
+it needed to be slightly extended (e.g. ignoring comments)
 
 Just for reference, this is the RFC grammar as provided by the IETF:
 
@@ -14,39 +14,49 @@ file        = [header CRLF] record *(CRLF record) [EOF] #[CRLF]
 header      = name *(COMMA name)
 record      = field *(COMMA field)
 name        = field
-field       = (escaped / non-escaped)
-escaped     = DQUOTE *(TEXTDATA / COMMA / CR / LF / 2DQUOTE) DQUOTE
+field       = (escaped | non-escaped)
+escaped     = DQUOTE *(TEXTDATA | COMMA | CR | LF | 2DQUOTE) DQUOTE
 non-escaped = *TEXTDATA
 COMMA       = %x2C
 CR          = %x0D 
 DQUOTE      = %x22 
 LF          = %x0A 
 CRLF        = CR LF 
-TEXTDATA    = %x20-21 / %x23-2B / %x2D-7E
+TEXTDATA    = %x20-21 | %x23-2B | %x2D-7E
 
 I needed to validate the two most used versions - the "doubling quotes" and 
-the "escape characters" - into the same engine, so I slightly modified 
+the "escape character" - into the same engine, so I slightly modified 
 the grammar to better reflect actual code implementation. I also extended it
 to validate the case of "escaped characters". This is the result:
 
 CSV CRUNCHER 
 
-stream      = record *(CRLF record) EOF
-record      = field *(separator field) / comment
-field       = quoted / simple
-quoted      = DQUOTE *(separator / TEXT / CR / LF / 2DQUOTE / 2ESCAPE / ESCAPE TEXT) DQUOTE
-simple      = *(TEXT / DQUOTE)
-comment     = *(SPACE) COMMENT
-separator   = COMMA / COLON / SEMICOLON / TEXT
-COMMA       = %x2C
-COMMENT     = %x23
-DQUOTE      = %x22
-ESCAPE      = %x5C
+TODO:
+*!!! field separator, text qualifier,(record separator), interpret '\' as an escape char
+vedi http://www.boyet.com/articles/csvparser.html  --  parseQuotedField
+e pensa a come trattare i vari casi
+(e.g. start,"""text""",\text,\\text,\\\text,"te""xt","text,","text,""text,end)
+
+file        = record *(CRLF record) EOF
+record      = field *(separator field) | comment --e.g. ,,A,B has 2 empty fields and is valid
+field       = simple | quoted
+simple      = TEXT -- e.g. f""ie"l"""d is OK
+quoted      = qualifier escaped qualifier
+escaped     = ESC_TEXT *(escape_mark ESC_TEXT)
+escape_mark = (2qualifier | BACKSLASH qualifier)
+qualifier   = one of {DQUOTE, COLON, BACKSLASH}
+separator   = one of {COMMA, COLON, SEMICOLON}
+comment     = *(SPACE | TAB) COMMENT
+COMMA       = %x2C --i.e. ','
+COLON       = %x58 --i.e. ':'
+SEMICOLON   = %x59 --i.e. ';'
+COMMENT     = %x23 --i.e. '#'
+DQUOTE      = %x22 --i.e. '"'
+BACKSLASH   = %x5C --i.e. '\'
 CR          = %x0D 
 LF          = %x0A 
-CRLF        = CR LF / CR / LF
 SPACE       = %x20
-TEXT        = %x20-21 / %x23-7E / (empty string)
-
-
+CRLF        = CR LF | LF
+TEXT        = *(any char except CRLF, separator, EOF) (also TEXT="" shall be valid) --was: +(%x20-21 | %x23-7E)
+ESC_TEXT    = +(any char except qualifier, EOF)
 

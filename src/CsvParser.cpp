@@ -22,6 +22,7 @@
 
 #define DBG_MSG false
 //TODO: currently, separator and comment are both a single char
+//TODO: ignore empty rows
 void CsvParser::setComment_(std::string comment) { std::string c(comment); }
 void CsvParser::setSeparator_(std::string separator) { std::string c(separator); }
 
@@ -177,6 +178,21 @@ std::string CsvParser::parseQuoted()
     std::stringstream ss;
     //skip quote
     in.get();
+
+/*
+private string parseQuotedField(ICharTokenizer reader) {
+  reader.Read(); // read and discard initial quote
+
+  string field = parseEscapedField(reader);
+
+  char ch = reader.Read();
+  if (ch != '"') {
+    reader.Unread(ch);
+    throw new CsvParserNoTermQuoteException(
+        "Quoted field has no terminating double quote");
+  }
+  return field;
+}*/
 
     in.get(ch);
     //TODO: isSingleQuote should be isQualifier (see keepass csv importer)
