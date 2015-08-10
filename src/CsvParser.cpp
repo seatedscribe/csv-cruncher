@@ -20,15 +20,11 @@
 #include <fstream>
 #include "CsvParser.h"
 
-#define DBG_MSG false
+#define DBG_MSG true
 //TODO: currently, separator and comment are both a single char
 void CsvParser::setComment_(std::string comment) { std::string c(comment); }
 void CsvParser::setSeparator_(std::string separator) { std::string c(separator); }
 
-std::string CsvParser::getError()
-{
-    return errorMsg.str();
-}
 
 CsvParser::CsvParser(std::istream& data)
     : in(data)
@@ -64,12 +60,14 @@ CsvParser::CsvParser(std::istream& data)
 
 void CsvParser::reset()
 {
+    in.clear();
     in.seekg(0, std::ios::beg);
     csvLine = 1;
     columns = 0;
     isGood = true;
-    while (table.size())
-        table.pop_back();
+    ignoreEmpty = true;
+    //while (table.size())
+    //    table.pop_back();
     table.clear();
     errorMsg.str("");
     errorMsg.clear();
@@ -78,6 +76,10 @@ void CsvParser::reset()
 bool CsvParser::parse()
 {
     reset();
+    if (length <= 0) {
+        errorMsg <<"file seems empty; skipping..." <<std::endl;
+        return false;
+    }
     parseFile();
     int rows=table.size();
     size_t columns=table.at(0).size();
@@ -94,8 +96,8 @@ void CsvParser::parseFile()
     ch = in.peek();
     while (ch != EOF) {
         if (!skipEndline()) {
-            errorMsg <<"*** parse error @line "
-                     <<csvLine << std::endl;
+            errorMsg <<"*** ABORTING ***\nCRITICAL PARSE ERROR @line "
+                     <<csvLine << " - wrong separator?" <<std::endl;
             dumpRow(table.size()-1);
             isGood = false;
             return;
@@ -117,8 +119,21 @@ void CsvParser::parseRecord()
         } while (ch == separator);
         in.unget();
 
-        if (0 == columns)
+        if (isEmptyRow()) {
+            parsedRow.clear();
+            if (DBG_MSG) {
+                errorMsg <<"DBG -->@" <<csvLine
+                         <<" skp empty row" <<std::endl;
+            }
+            return;
+        }
+
+        if ((0 == columns)) {
             columns = parsedRow.size();
+            if (DBG_MSG) {
+                std::cout<<"DBG: header @line "<< csvLine <<std::endl;
+            }
+        }
         else if (parsedRow.size() != columns) {
             errorMsg
                <<"*** WARNING: row " <<csvLine
@@ -131,7 +146,7 @@ void CsvParser::parseRecord()
         table.push_back(parsedRow);
         parsedRow.clear();
         if (DBG_MSG) {
-            errorMsg <<"DBG -->";
+            errorMsg <<"DBG +->";
             dumpRow(table.size()-1);
 //            std::cout <<errorMsg.str()<<std::endl;
         }
@@ -150,6 +165,11 @@ void CsvParser::parseField()
     }
     parsedRow.push_back(fieldValue);
     //std::cout<<fieldValue<<std::endl;
+}
+
+void CsvParser::ignoreEmptyRows(bool ignore)
+{
+    ignoreEmpty = ignore;
 }
 
 std::string CsvParser::parseQuoted()
@@ -271,6 +291,13 @@ bool CsvParser::isText(char c)
     return false;
 }
 
+bool CsvParser::isEmptyRow()
+{
+    if (parsedRow.at(0).size() == 0)
+        return true;
+    return false;
+}
+
 void CsvParser::skipLine()
 {
     std::string s;
@@ -336,6 +363,8 @@ void CsvParser::setComment(char c)
     comment = c;
 }
 
+
+
 void CsvParser::getParsedData(csvtable& table)
 {
     table = this->table;
@@ -352,3 +381,10 @@ void CsvParser::dumpRow(std::size_t row) {
         errorMsg <<"|" <<*it++;
     errorMsg <<"|\n";
 }
+
+std::string CsvParser::getError()
+{
+    return errorMsg.str();
+}
+
+

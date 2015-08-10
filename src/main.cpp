@@ -20,59 +20,80 @@
 #include <vector>
 #include "CsvParser.h"
 
-
+void tryParse(std::ifstream &file);
+csvtable parsed;
 
 int main()
 {
 
-    csvtable parsed;
     std::vector<std::string> filenames;
-//    filenames.push_back("onerow_emptylines.csv");
-//    filenames.push_back("onefield.csv");
-//    filenames.push_back("onerow.csv");
-//    filenames.push_back("test.csv");
-    filenames.push_back("sol049.csv");
+//    filenames.push_back("u_sol049.csv");
+//    filenames.push_back("d_sol049.csv");
+
+    filenames.push_back("u_corner.csv");
+    filenames.push_back("d_corner.csv");
+
+//    filenames.push_back("u_onerow.csv");
+//    filenames.push_back("d_onerow.csv");
+
+//    filenames.push_back("u_onefield.csv");
+//    filenames.push_back("d_onefield.csv");
+
+//    filenames.push_back("u_emptylines.csv");
+//    filenames.push_back("d_emptylines.csv");
+
+//    filenames.push_back("u_empty.csv");
+//    filenames.push_back("d_empty.csv");
 
     while (filenames.size()) {
         std::string current("../examples/");
         current+=filenames.back();
         filenames.pop_back();
+
         std::ifstream file(current.c_str(), std::ios::in | std::ios::binary);
+
         if (!file) {
             std::cout <<"File not found: " <<current.c_str() <<std::endl;
             continue;
         }
 
-        CsvParser csv(file);
         if (!file.is_open()) {
-            std::cout <<"File " <<current.c_str() <<" not open!" <<std::endl;
-            continue;
+        std::cout <<"File " <<current.c_str() <<" not open!" <<std::endl;
+        continue;
         }
 
-        std::cout <<"Parsing " <<current.c_str() <<std::endl;
-        if(!csv.parse()) {
-            std::cout<<"WARNING: errors found in source data!"<<std::endl;
-            std::cout<<csv.getError()<<std::endl;
-
-            std::cout<<"Trying with another separator..."<<std::endl;
-            csv.setSeparator(';');
-            if (csv.parse())
-                std::cout<<"Good!"<<std::endl;
-            else std::cout<<csv.getError()<<std::endl;
-        }
-
+        std::cout <<"\nParsing " <<current.c_str() <<std::endl;
+        tryParse(file);
         file.close();
-        std::cout<<"****++++****++++****++++\n";
-        csv.getParsedData(parsed);
-
-        csvtable::iterator it = parsed.begin();
-        int rows=parsed.size();
-        std::size_t columns=(*it).size();
-        std::cout<<rows <<" rows, " <<columns <<" columns" <<std::endl;
-        for (;it != parsed.end(); ++it) {
-//                std::cout<<(*it).at(0)<<std::endl;
-        }
     }
     return 0;
 }
 
+void tryParse(std::ifstream& file)
+{
+
+    CsvParser csv(file);
+    csv.setSeparator(';');
+    if(!csv.parse()) {
+        std::cout<<"Errors found in source data!\n"
+                  <<csv.getError()<<std::endl
+                 <<"Let's try with another separator... [,]"<<std::endl;
+        csv.setSeparator(',');
+        if (csv.parse())
+            std::cout<<"Good at second shot!"<<std::endl;
+        else std::cout<<csv.getError()<<std::endl;
+    }
+    else std::cout<<"No formal errors; check if you expect:"<<std::endl;
+
+    csv.getParsedData(parsed);
+
+    csvtable::iterator it = parsed.begin();
+    int rows=parsed.size();
+    if (rows == 0)
+        return;
+    std::size_t columns=(*it).size();
+    std::cout<<rows <<" rows, " <<columns <<" columns" <<std::endl;
+    for (;it != parsed.end(); ++it) {
+       //process data
+    }
+}

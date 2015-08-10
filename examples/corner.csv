@@ -1,0 +1,15 @@
+c 1,c2,c3,c4
+"bhat.com", 48 , ,"Saturday, ""Fool's day"", 2005", "Mack ""The Knife"" with space"
+Account #1,Michael321,1234;5,http://web2.coz
+#a simple comment
+Account #2,login,"PAss,\"W*rD,",web3.coz,comment
+
+
+    #  this comment, as it is, \should be "entirely" skipped
+
+"Account","Login Name","Password","Web Site","Comments"
+Account #1,Michael321,1234\,5,http://web2.coz
+  #    should skip this
+"A1",,"P1","3,\"Notes"
+"A2",C2,"P2","OK","Notes"
+# another comment

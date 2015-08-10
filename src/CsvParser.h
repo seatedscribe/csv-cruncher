@@ -35,7 +35,7 @@ public:
     void setSeparator_(std::string separator);
     void setComment(char c);
     void setSeparator(char c);
-//    void ignoreEmptyRows(bool ignore);
+    void ignoreEmptyRows(bool ignore);
     void getParsedData(csvtable& table);
     std::string getError();
 
@@ -50,6 +50,7 @@ private:
     std::size_t csvLine;
     csvrow parsedRow;
     csvtable table;
+    bool ignoreEmpty;
     bool isGood;
     std::stringstream errorMsg;
 
@@ -70,6 +71,7 @@ private:
     bool isSpace(char c);
     bool isSeparator(char c);
     bool isText(char c);
+    bool isEmptyRow();
     bool skipEndline();
     void skipLine();
     bool isFieldTerminator(char c);
