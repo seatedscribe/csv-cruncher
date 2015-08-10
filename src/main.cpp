@@ -27,23 +27,26 @@ int main()
 {
 
     std::vector<std::string> filenames;
-//    filenames.push_back("u_sol049.csv");
-//    filenames.push_back("d_sol049.csv");
+    filenames.push_back("u_diffcolumns.csv");
+    filenames.push_back("d_diffcolumns.csv");
+
+    filenames.push_back("u_sol049.csv");
+    filenames.push_back("d_sol049.csv");
 
     filenames.push_back("u_corner.csv");
     filenames.push_back("d_corner.csv");
 
-//    filenames.push_back("u_onerow.csv");
-//    filenames.push_back("d_onerow.csv");
+    filenames.push_back("u_onerow.csv");
+    filenames.push_back("d_onerow.csv");
 
-//    filenames.push_back("u_onefield.csv");
-//    filenames.push_back("d_onefield.csv");
+    filenames.push_back("u_onefield.csv");
+    filenames.push_back("d_onefield.csv");
 
-//    filenames.push_back("u_emptylines.csv");
-//    filenames.push_back("d_emptylines.csv");
+    filenames.push_back("u_emptylines.csv");
+    filenames.push_back("d_emptylines.csv");
 
-//    filenames.push_back("u_empty.csv");
-//    filenames.push_back("d_empty.csv");
+    filenames.push_back("u_empty.csv");
+    filenames.push_back("d_empty.csv");
 
     while (filenames.size()) {
         std::string current("../examples/");
@@ -73,12 +76,12 @@ void tryParse(std::ifstream& file)
 {
 
     CsvParser csv(file);
-    csv.setSeparator(';');
+    csv.setSeparator(',');
     if(!csv.parse()) {
         std::cout<<"Errors found in source data!\n"
                   <<csv.getError()<<std::endl
-                 <<"Let's try with another separator... [,]"<<std::endl;
-        csv.setSeparator(',');
+                 <<"Let's try with another separator... [;]"<<std::endl;
+        csv.setSeparator(';');
         if (csv.parse())
             std::cout<<"Good at second shot!"<<std::endl;
         else std::cout<<csv.getError()<<std::endl;

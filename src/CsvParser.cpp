@@ -20,7 +20,7 @@
 #include <fstream>
 #include "CsvParser.h"
 
-#define DBG_MSG true
+#define DBG_MSG false
 //TODO: currently, separator and comment are both a single char
 void CsvParser::setComment_(std::string comment) { std::string c(comment); }
 void CsvParser::setSeparator_(std::string separator) { std::string c(separator); }
