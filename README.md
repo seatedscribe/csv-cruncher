@@ -31,12 +31,6 @@ to validate the case of "escaped characters". This is the result:
 
 CSV CRUNCHER 
 
-TODO:
-*!!! field separator, text qualifier,(record separator), interpret '\' as an escape char
-vedi http://www.boyet.com/articles/csvparser.html  --  parseQuotedField
-e pensa a come trattare i vari casi
-(e.g. start,"""text""",\text,\\text,\\\text,"te""xt","text,","text,""text,end)
-
 file        = record *(CRLF record) EOF
 record      = field *(separator field) | comment --e.g. ,,A,B has 2 empty fields and is valid
 field       = simple | quoted
